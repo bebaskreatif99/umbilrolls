@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Pengaturan & Inventory - Umbirolls Drizzle{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* DESKTOP LAYOUT */
+    .settings-split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: var(--text-muted); }
+    .form-input { width: 100%; padding: 10px; border: 2px solid #ddd6fe; border-radius: 8px; font-size: 14px; }
+    .btn-save { background: var(--primary-gradient); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; width: auto; }
+    .btn-add-stock { background: #3b82f6; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; width: auto; }
+    .btn-danger { background: var(--danger-color); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; width: auto; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
+    .modal-box { background: white; padding: 30px; border-radius: 16px; max-width: 450px; width: 90%; text-align: center; box-shadow: var(--shadow-md); }
+
+    /* MOBILE LAYOUT */
+    @media (max-width: 900px) {
+        .settings-split-grid { grid-template-columns: 1fr; gap: 20px; }
+    }
+    @media (max-width: 480px) {
+        .form-grid { grid-template-columns: 1fr; gap: 15px; }
+        .btn-save, .btn-add-stock, .btn-danger { width: 100%; text-align: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-split-grid">
+    
+    <div class="panel-card" style="border-top: 5px solid #3b82f6;">
+        <h2 class="panel-title" style="color: #1e3a8a; border-left-color: #3b82f6;">📦 Stock In (Kulakan Bahan Baku)</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Tambahkan barang pasokan logistik yang baru dibeli ke dalam sistem database.</p>
+        
+        <form method="POST" action="{{ url_for('settings') }}">
+            <input type="hidden" name="action_type" value="update_inventory">
+            
+            <div class="form-group">
+                <label>Tambah Stok Ubi Ungu (Gram)</label>
+                <input type="number" name="add_ubi" class="form-input" min="0" value="0">
+                <span style="font-size: 11px; color: var(--primary-deep); font-weight: 600;">Stok saat ini: {{ inventory['ubi_ungu_gr'] }} gr</span>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Tambah Stok Kulit Lumpia (Lembar)</label>
+                <input type="number" name="add_kulit" class="form-input" min="0" value="0">
+                <span style="font-size: 11px; color: var(--primary-deep); font-weight: 600;">Stok saat ini: {{ inventory['kulit_lumpia_lbr'] }} lbr</span>
+            </div>
+            
+            <div style="margin-top: 25px;">
+                <button type="submit" class="btn-add-stock"><i class="fa-solid fa-plus"></i> Tambahkan ke Inventory</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel-card" style="border-top: 5px solid var(--primary-light);">
+        <h2 class="panel-title">⚙️ Simulasi Kapasitas & Finansial</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Konfigurasikan jumlah kepemilikan aset mesin paralel aktif dapur.</p>
+        
+        <form method="POST" action="{{ url_for('settings') }}">
+            <input type="hidden" name="action_type" value="update_config">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Mesin Kukus Aktif</label>
+                    <input type="number" name="mesin_kukus" class="form-input" value="{{ config.mesin_kukus }}" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Wajan Goreng Aktif</label>
+                    <input type="number" name="mesin_goreng" class="form-input" value="{{ config.mesin_goreng }}" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Target Margin (%)</label>
+                    <input type="number" name="margin_target" class="form-input" value="{{ config.margin_target }}" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Standar Jam Kerja (Hari)</label>
+                    <input type="number" name="jam_kerja_hari" class="form-input" value="{{ config.jam_kerja_hari }}" step="0.5">
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> Terapkan Simulasi</button>
+            </div>
+        </form>
+        
+        <hr style="border:0; border-top:1px solid #ddd6fe; margin:25px 0 20px 0;">
+        <h4 style="color:var(--danger-color); margin:0 0 10px 0;"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h4>
+        <button type="button" class="btn-danger" onclick="document.getElementById('modalReset').style.display='flex'">
+            <i class="fa-solid fa-trash"></i> Hapus Seluruh Data Transaksi
+        </button>
+    </div>
+</div>
+
+<div id="modalReset" class="modal-overlay">
+    <div class="modal-box">
+        <h3 style="color:var(--danger-color); margin-top: 0;">Konfirmasi Hapus Data</h3>
+        <p style="font-size:13px; color:var(--text-muted); line-height: 1.5;">Ketik kata <strong>RESET</strong> dengan huruf kapital untuk melanjutkan pembersihan total.</p>
+        <input type="text" id="inputVerifikasi" class="form-input" placeholder="Ketik RESET disini..." style="text-align:center; margin-bottom:20px; border-color: var(--danger-color);">
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button type="button" class="form-input" style="width:auto; cursor:pointer;" onclick="document.getElementById('modalReset').style.display='none'">Batal</button>
+            <form method="POST" action="{{ url_for('reset_data') }}" style="margin: 0;" onsubmit="return document.getElementById('inputVerifikasi').value === 'RESET'">
+                <button type="submit" class="btn-danger">Ya, Hapus Semua</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

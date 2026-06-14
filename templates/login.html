@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Umbirolls Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+            --primary-light: #7c3aed; --bg-workspace: #f5f3ff;
+            --text-dark: #1e1b4b; --text-muted: #6b7280;
+        }
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-workspace); 
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
+        }
+        .login-card {
+            background: white; max-width: 420px; width: 100%; border-radius: 20px;
+            padding: 40px 30px; box-shadow: 0 20px 40px -10px rgba(76, 29, 149, 0.15);
+            border-top: 6px solid var(--primary-light); text-align: center;
+        }
+        .login-brand h2 { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 28px; color: #4c1d95; margin: 0; }
+        .login-brand p { margin: 5px 0 30px 0; font-size: 12px; color: var(--primary-light); letter-spacing: 2px; font-weight: bold; }
+        
+        .form-group { margin-bottom: 20px; text-align: left; position: relative; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--text-muted); }
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #a78bfa; font-size: 16px; }
+        .form-input { width: 100%; padding: 12px 12px 12px 40px; border: 2px solid #ddd6fe; border-radius: 10px; font-size: 14px; transition: all 0.3s; }
+        .form-input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+        
+        .btn-login { width: 100%; background: var(--primary-gradient); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s; margin-top: 10px; }
+        .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .alert { padding: 12px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; margin-bottom: 20px; text-align: left; }
+        .alert-error { background-color: #fef2f2; color: #b91c1c; border-left: 4px solid #dc2626; }
+        .alert-success { background-color: #f0fdf4; color: #15803d; border-left: 4px solid #16a34a; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-brand">
+        <h2>UMBIROLLS</h2>
+        <p>DRIZZLE SYSTEM</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" name="username" class="form-input" placeholder="Masukkan username..." required autofocus>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" name="password" class="form-input" placeholder="Masukkan password..." required>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard</button>
+    </form>
+</div>
+
+</body>
+</html>

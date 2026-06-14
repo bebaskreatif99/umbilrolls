@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Data Proses - Umbirolls Drizzle{% endblock %}
+
+{% block extra_css %}
+<style>
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8fafc; color: var(--text-muted); padding: 14px; font-size: 13px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #edf2f7; }
+    .form-input-table { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; min-width: 100px; }
+    .btn-action { background: var(--primary-gradient); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: auto; }
+    .btn-add { background: #3b82f6; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+    .responsive-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    @media (max-width: 768px) {
+        .btn-action { width: 100%; text-align: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="panel-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <h2 class="panel-title" style="margin: 0;">Pusat Data Proses Lini Manufaktur</h2>
+        <button type="button" class="btn-add" onclick="tambahBarisProses()"><i class="fa-solid fa-plus"></i> Tambah Stasiun</button>
+    </div>
+    
+    <form method="POST" action="{{ url_for('proses') }}">
+        <div class="responsive-table-wrapper">
+            <table id="tabelProses">
+                <thead>
+                    <tr>
+                        <th>Stasiun Operasi</th>
+                        <th>Grup / Kelompok</th>
+                        <th>Cycle Time (Detik)</th>
+                        <th>Reject (%)</th>
+                        <th>Status Kendali</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data_proses %}
+                    <tr>
+                        <td><input type="text" name="stasiun[]" class="form-input-table" value="{{ item.stasiun }}" required style="min-width: 140px;"></td>
+                        <td><input type="text" name="kelompok[]" class="form-input-table" value="{{ item.kelompok }}"></td>
+                        <td><input type="text" name="waktu[]" class="form-input-table" value="{{ item.waktu }}"></td>
+                        <td><input type="text" name="reject[]" class="form-input-table" value="{{ item.reject }}"></td>
+                        <td>
+                            <select name="status[]" class="form-input-table" style="min-width: 120px;">
+                                <option value="OPTIMAL" {% if 'OPTIMAL' in item.status %}selected{% endif %}>OPTIMAL</option>
+                                <option value="BOTTLENECK" {% if 'BOTTLENECK' in item.status %}selected{% endif %}>BOTTLENECK</option>
+                            </select>
+                        </td>
+                        <td style="text-align: center;"><button type="button" onclick="hapusBaris(this)" style="color: #ef4444; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 25px;">
+            <button type="submit" class="btn-action"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Lini</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function tambahBarisProses() {
+        const tbody = document.querySelector("#tabelProses tbody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="text" name="stasiun[]" class="form-input-table" required style="min-width: 140px;"></td>
+            <td><input type="text" name="kelompok[]" class="form-input-table" value="WIP"></td>
+            <td><input type="text" name="waktu[]" class="form-input-table" value="0"></td>
+            <td><input type="text" name="reject[]" class="form-input-table" value="0"></td>
+            <td>
+                <select name="status[]" class="form-input-table" style="min-width: 120px;">
+                    <option value="OPTIMAL">OPTIMAL</option>
+                    <option value="BOTTLENECK">BOTTLENECK</option>
+                </select>
+            </td>
+            <td style="text-align: center;"><button type="button" onclick="hapusBaris(this)" style="color: #ef4444; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+    function hapusBaris(btn) { btn.closest("tr").remove(); }
+</script>
+{% endblock %}

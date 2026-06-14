@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Data Costing - Umbirolls Drizzle{% endblock %}
+
+{% block extra_css %}
+<style>
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8fafc; color: var(--text-muted); padding: 14px; font-size: 13px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #edf2f7; }
+    .form-input-table { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; min-width: 100px; }
+    .btn-action { background: var(--primary-gradient); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: auto; }
+    .btn-add { background: #3b82f6; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+    .responsive-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    @media (max-width: 768px) {
+        .panel-card { padding: 15px; }
+        .btn-action { width: 100%; text-align: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="panel-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <h2 class="panel-title" style="margin: 0;">Pusat Data Costing (HPP Dinamis)</h2>
+        <button type="button" class="btn-add" onclick="tambahBarisCosting()"><i class="fa-solid fa-plus"></i> Tambah Komponen</button>
+    </div>
+    
+    <form method="POST" action="{{ url_for('costing') }}">
+        <div class="responsive-table-wrapper">
+            <table id="tabelCosting">
+                <thead>
+                    <tr>
+                        <th>Komponen Bahan</th>
+                        <th>Harga Satuan (Rp)</th>
+                        <th>Vol. Kebutuhan</th>
+                        <th>Total Alokasi (Rp)</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data_costing %}
+                    <tr>
+                        <td><input type="text" name="nama[]" class="form-input-table" value="{{ item.nama }}" required style="min-width: 150px;"></td>
+                        <td><input type="text" name="harga_satuan[]" class="form-input-table" value="{{ item.harga_satuan }}"></td>
+                        <td><input type="text" name="kebutuhan[]" class="form-input-table" value="{{ item.kebutuhan }}"></td>
+                        <td><input type="text" name="total[]" class="form-input-table" value="{{ item.total }}"></td>
+                        <td style="text-align: center;"><button type="button" onclick="hapusBaris(this)" style="color: #ef4444; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 25px;">
+            <button type="submit" class="btn-action"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Costing</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function tambahBarisCosting() {
+        const tbody = document.querySelector("#tabelCosting tbody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="text" name="nama[]" class="form-input-table" placeholder="Nama bahan..." required style="min-width: 150px;"></td>
+            <td><input type="text" name="harga_satuan[]" class="form-input-table" placeholder="0"></td>
+            <td><input type="text" name="kebutuhan[]" class="form-input-table" placeholder="0"></td>
+            <td><input type="text" name="total[]" class="form-input-table" placeholder="0"></td>
+            <td style="text-align: center;"><button type="button" onclick="hapusBaris(this)" style="color: #ef4444; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+    function hapusBaris(btn) { btn.closest("tr").remove(); }
+</script>
+{% endblock %}

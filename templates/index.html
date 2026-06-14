@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Utama - Umbirolls Drizzle{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ========================================================
+       TAMPILAN UTAMA (DESKTOP GRID)
+       ======================================================== */
+    .grid-dashboard { display: grid; grid-template-columns: 400px 1fr; gap: 30px; }
+    
+    /* Grid 5 Kolom KPI Atas */
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px; }
+    .kpi-card { background: var(--bg-card); border-radius: 12px; padding: 15px; box-shadow: var(--shadow-md); border-top: 4px solid var(--primary-light); }
+    .kpi-card h3 { margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .kpi-card p { margin: 5px 0 0 0; font-size: 19px; font-weight: 800; font-family: 'Poppins', sans-serif; }
+    
+    /* Elemen Formulir */
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: var(--text-muted); }
+    .form-input { width: 100%; padding: 8px; border: 2px solid #ddd6fe; border-radius: 8px; font-size: 14px; }
+    .btn-action { width: 100%; background: var(--primary-gradient); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 5px; }
+    .btn-export { background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 13px; display: inline-block; }
+    
+    .flavor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
+    /* Tabel Data */
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8fafc; color: var(--text-muted); padding: 12px; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; text-align: left; }
+    td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; white-space: nowrap; }
+    
+    /* Indikator Peringatan Stok Kritis */
+    .badge-stok { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle; display: inline-block; }
+    .stok-aman { background: #dcfce7; color: #166534; }
+    .stok-kritis { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; animation: pulse 1.5s infinite; }
+    
+    @keyframes pulse { 
+        0% { opacity: 1; } 
+        50% { opacity: 0.6; } 
+        100% { opacity: 1; } 
+    }
+    
+    /* Toolbar Pencarian & Filter */
+    .filter-toolbar { display: flex; gap: 10px; align-items: center; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+
+    /* Pembungkus Responsif Tabel HP */
+    .responsive-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ========================================================
+       MEDIA QUERIES (OTOMATIS MENYESUAIKAN DI MOBILE/HP)
+       ======================================================== */
+    @media (max-width: 1200px) {
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .grid-dashboard { grid-template-columns: 1fr; gap: 20px; }
+        .filter-toolbar { flex-direction: column; align-items: stretch; }
+        .filter-toolbar form { flex-direction: column; width: 100%; }
+        .filter-toolbar .form-input { width: 100% !important; }
+        #customDateWrapper { width: 100%; justify-content: space-between; }
+    }
+    @media (max-width: 480px) {
+        .kpi-grid { grid-template-columns: 1fr; }
+        .flavor-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+    <div class="kpi-card" style="border-top-color: #3b82f6;">
+        <h3>Kapasitas Pabrik/Hari</h3>
+        <p style="color: #3b82f6;" title="Dihitung otomatis berdasarkan Theory of Constraints">{{ kapasitas_harian }} Pack</p>
+    </div>
+    <div class="kpi-card" style="border-top-color: #7c3aed;">
+        <h3>Total Order Disaring</h3>
+        <p style="color: #7c3aed;">{{ total_order }} Pack</p>
+    </div>
+    <div class="kpi-card" style="border-top-color: #fbbf24;">
+        <h3>Varian Terlaris</h3>
+        <p style="color: #b45309;"><i class="fa-solid fa-star"></i> {{ best_seller }}</p>
+    </div>
+    <div class="kpi-card" style="border-top-color: #0ea5e9;">
+        <h3>Total Pendapatan</h3>
+        <p style="color: #0ea5e9;">{{ total_pendapatan | rupiah }}</p>
+    </div>
+    <div class="kpi-card" style="border-top-color: #10b981;">
+        <h3>Laba Bersih Terfilter</h3>
+        <p style="color: #10b981;">{{ total_laba | rupiah }}</p>
+    </div>
+</div>
+
+<div class="grid-dashboard">
+    <div>
+        <div class="panel-card">
+            <h2 class="panel-title">INPUT ORDER (DETAIL RASA)</h2>
+            <form method="POST" action="/">
+                <div class="flavor-grid">
+                    <div class="form-group"><label>🍫 Coklat</label><input type="number" name="qty_coklat" class="form-input qty-input" value="0" min="0"></div>
+                    <div class="form-group"><label>🍓 Stroberi</label><input type="number" name="qty_stroberi" class="form-input qty-input" value="0" min="0"></div>
+                    <div class="form-group"><label>☕ Tiramissu</label><input type="number" name="qty_tiramissu" class="form-input qty-input" value="0" min="0"></div>
+                    <div class="form-group"><label>🧀 Keju</label><input type="number" name="qty_keju" class="form-input qty-input" value="0" min="0"></div>
+                    <div class="form-group" style="grid-column: 1 / -1;"><label>🍪 Oreo</label><input type="number" name="qty_oreo" class="form-input qty-input" value="0" min="0"></div>
+                </div>
+                
+                <div style="background: #e0e7ff; color: #3730a3; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 13px; margin: 10px 0;">
+                    <i class="fa-solid fa-calculator"></i> Total akan diproses: <span id="liveTotal" style="font-size: 16px;">0</span> Pack
+                </div>
+                
+                <button type="submit" class="btn-action"><i class="fa-solid fa-cart-arrow-down"></i> Potong Stok & Antrekan</button>
+            </form>
+        </div>
+
+        <div class="panel-card" style="background: #f8fafc;">
+            <h2 class="panel-title" style="font-size: 14px; color: #334155;">STATUS INVENTORY</h2>
+            
+            <p style="font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
+                🍠 Ubi Ungu: <span>{{ inventory['ubi_ungu_gr'] }} Gram</span>
+                {% if inventory['ubi_ungu_gr'] < 600 %}
+                    <span class="badge-stok stok-kritis">Kritis! Butuh Kulakan</span>
+                {% else %}
+                    <span class="badge-stok stok-aman">Aman</span>
+                {% endif %}
+            </p>
+            
+            <p style="font-size: 13px; font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
+                🥟 Kulit Lumpia: <span>{{ inventory['kulit_lumpia_lbr'] }} Lembar</span>
+                {% if inventory['kulit_lumpia_lbr'] < 75 %}
+                    <span class="badge-stok stok-kritis">Kritis! Butuh Kulakan</span>
+                {% else %}
+                    <span class="badge-stok stok-aman">Aman</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div>
+        <div class="panel-card">
+            <div class="filter-toolbar">
+                <div><i class="fa-solid fa-filter" style="color: var(--primary-light);"></i> <span style="font-size: 13px; font-weight: 600;">Filter Data:</span></div>
+                <form method="GET" action="/" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%;">
+                    <select name="filter_waktu" id="filterSelect" class="form-input" style="width: 140px;" onchange="toggleCustomDate()">
+                        <option value="semua" {% if filter_aktif == 'semua' %}selected{% endif %}>Semua Waktu</option>
+                        <option value="hari_ini" {% if filter_aktif == 'hari_ini' %}selected{% endif %}>Hari Ini</option>
+                        <option value="7_hari" {% if filter_aktif == '7_hari' %}selected{% endif %}>7 Hari Terakhir</option>
+                        <option value="bulan_ini" {% if filter_aktif == 'bulan_ini' %}selected{% endif %}>Bulan Ini</option>
+                        <option value="kustom" {% if filter_aktif == 'kustom' %}selected{% endif %}>Kustom Rentang</option>
+                    </select>
+                    
+                    <div id="customDateWrapper" style="display: {% if filter_aktif == 'kustom' %}flex{% else %}none{% endif %}; gap: 5px; align-items: center; flex-wrap: wrap;">
+                        <input type="date" name="start_date" class="form-input" style="width: 130px;" value="{{ start_date or '' }}">
+                        <span style="font-size: 12px; font-weight: bold;">s/d</span>
+                        <input type="date" name="end_date" class="form-input" style="width: 130px;" value="{{ end_date or '' }}">
+                    </div>
+                    <button type="submit" class="btn-action" style="width: auto; margin-top: 0; padding: 8px 15px;">Terapkan</button>
+                </form>
+            </div>
+
+            <div style="height: 200px; margin-bottom: 25px;"><canvas id="dashboardChart"></canvas></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h2 class="panel-title" style="margin: 0; font-size: 15px;">LOG TRANSAKSI & ANTREAN</h2>
+                <a href="{{ url_for('export_csv') }}" class="btn-export"><i class="fa-solid fa-file-excel"></i> Export CSV</a>
+            </div>
+            
+            <div class="responsive-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID Transaksi</th>
+                            <th>Total</th>
+                            <th>Rincian Rasa</th>
+                            <th>Laba</th>
+                            <th>Status Antrean</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transaksi | reverse %}
+                        <tr>
+                            <td>
+                                <span style="font-weight:700; color:var(--primary-light);">{{ t.id }}</span><br>
+                                <span style="font-size: 10px; color: #94a3b8;">{{ t.tanggal }}</span>
+                            </td>
+                            <td style="font-weight:bold;">{{ t.jumlah }} Pack</td>
+                            <td>
+                                {% set rincian = [] %}
+                                {% for rasa, qty in t.rasa.items() %}
+                                    {% if qty > 0 %}
+                                        {% set _ = rincian.append(rasa ~ ' (' ~ qty ~ ')') %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ rincian | join(', ') }}
+                            </td>
+                            <td style="color:#10b981; font-weight:600;">{{ t.laba | rupiah }}</td>
+                            <td>
+                                <span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:11px; font-weight: bold;">
+                                    {{ t.antrean_kumulatif }} Hari
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">Tidak ada riwayat transaksi pada rentang waktu ini.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Live Total Counter Input Form
+    const qtyInputs = document.querySelectorAll('.qty-input');
+    const liveTotalDisplay = document.getElementById('liveTotal');
+    
+    function hitungTotal() {
+        let total = 0;
+        qtyInputs.forEach(input => { 
+            total += (parseInt(input.value) || 0); 
+        });
+        liveTotalDisplay.textContent = total;
+    }
+    qtyInputs.forEach(input => { 
+        input.addEventListener('input', hitungTotal); 
+    });
+
+    // 2. Toggle Visibilitas Tanggal Kustom
+    function toggleCustomDate() {
+        const selectValue = document.getElementById('filterSelect').value;
+        document.getElementById('customDateWrapper').style.display = (selectValue === 'kustom') ? 'flex' : 'none';
+    }
+
+    // 3. Inisialisasi Grafik Tren Garis Chart.js
+    const labels = [{% for t in transaksi | reverse %}'{{ t.id }}',{% endfor %}].reverse(); // Label dibalik agar urutan waktu grafik benar (Kiri ke Kanan)
+    const labaData = [{% for t in transaksi | reverse %}{{ t.laba }},{% endfor %}].reverse();
+    
+    new Chart(document.getElementById('dashboardChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tren Keuntungan Terfilter (Rp)',
+                data: labaData,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#10b981',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}
