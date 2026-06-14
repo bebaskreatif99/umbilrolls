@@ -9,12 +9,10 @@ from functools import wraps
 app = Flask(__name__)
 app.secret_key = 'umbirolls_super_secret_key_2026'
 
-# --- 1. PENGATURAN PATH FILE ANTI-ERROR ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 FILE_COSTING = os.path.join(BASE_DIR, 'Umbirolls drizzle AI.xlsx - Costing.csv')
 FILE_PROSES = os.path.join(BASE_DIR, 'Umbirolls drizzle AI.xlsx - Data proses.csv')
 
-# --- 2. KONFIGURASI GLOBAL & DATABASE ---
 APP_CONFIG = {
     'margin_target': 17.0, 'overhead_tetap': 21404, 'jam_kerja_hari': 8.0,
     'pembulatan_kelipatan': 500, 'mesin_kukus': 1, 'mesin_goreng': 1, 'user_role': 'Owner'
@@ -33,7 +31,6 @@ TRANSAKSI = [
     }
 ]
 
-# --- 3. DEKORATOR PENGAMAN (LOGIN REQUIRED WRAPPER) ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -43,7 +40,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- 4. FUNGSI LOAD & SAVE DATA ---
 def load_costing():
     data = []
     if os.path.exists(FILE_COSTING):
@@ -133,7 +129,6 @@ def save_proses(form):
         for i in range(len(stasiuns)):
             if stasiuns[i].strip(): writer.writerow([stasiuns[i], kelompoks[i], waktus[i], "-", rejects[i], "-", "-", "-", statuses[i]])
 
-# --- 5. LOGIKA KALKULASI FINANSIAL & OPERASIONAL ---
 def hitung_hpp_dan_harga():
     costing_data = load_costing()
     total_biaya_batch = 0
@@ -151,7 +146,8 @@ def hitung_hpp_dan_harga():
     return int(base_hpp_per_pack), harga_jual
 
 def hitung_durasi_produksi(jumlah_pesanan):
-    standar_batch_per_hari = 7.0
+    # DITINGKATKAN: 35 batch per hari agar kapasitas menjadi 1085 pack
+    standar_batch_per_hari = 35.0
     standar_jam_kerja = 8.0
     pack_per_batch = 31.0
     faktor_mesin = (APP_CONFIG['mesin_kukus'] + APP_CONFIG['mesin_goreng']) / 2.0
@@ -162,18 +158,15 @@ def hitung_durasi_produksi(jumlah_pesanan):
     return round(estimasi_hari, 2)
 
 def hitung_kapasitas_harian():
-    return int((7.0 * 31.0) * ((APP_CONFIG['mesin_kukus'] + APP_CONFIG['mesin_goreng']) / 2.0) * (APP_CONFIG['jam_kerja_hari'] / 8.0))
+    # DITINGKATKAN: 35.0 dikali 31.0 = 1085 Kapasitas Maksimal
+    return int((35.0 * 31.0) * ((APP_CONFIG['mesin_kukus'] + APP_CONFIG['mesin_goreng']) / 2.0) * (APP_CONFIG['jam_kerja_hari'] / 8.0))
 
-# --- 6. ROUTING AUTENTIKASI (LOGIN & LOGOUT) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'logged_in' in session:
-        return redirect(url_for('index'))
+    if 'logged_in' in session: return redirect(url_for('index'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
-        # Penguncian akun statis untuk Owner
         if username == 'owner' and password == 'umbirolls123':
             session['logged_in'] = True
             session['username'] = username
@@ -181,7 +174,6 @@ def login():
             return redirect(url_for('index'))
         else:
             flash("Username atau password salah!", "error")
-            
     return render_template('login.html')
 
 @app.route('/logout')
@@ -191,7 +183,6 @@ def logout():
     flash("👋 Anda telah berhasil keluar dari sistem.", "success")
     return redirect(url_for('login'))
 
-# --- 7. ROUTING APLIKASI WEB UTAMA (DILINDUNGI @LOGIN_REQUIRED) ---
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
