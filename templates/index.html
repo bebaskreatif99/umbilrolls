@@ -3,8 +3,7 @@
 
 {% block extra_css %}
 <style>
-    .grid-dashboard { display: grid; grid-template-columns: 400px 1fr; gap: 30px; }
-    
+    .grid-dashboard { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
     .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px; }
     .kpi-card { background: var(--bg-card); border-radius: 12px; padding: 15px; box-shadow: var(--shadow-md); border-top: 4px solid var(--primary-light); }
     .kpi-card h3 { margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
@@ -17,46 +16,38 @@
     .btn-export { background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 13px; display: inline-block; }
     
     .flavor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    
     table { width: 100%; border-collapse: collapse; }
     th { background: #f8fafc; color: var(--text-muted); padding: 12px; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #edf2f7; text-align: left; }
-    td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; white-space: nowrap; }
+    td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; white-space: nowrap; vertical-align: middle; }
     
+    /* REVISI DESAIN: Gaya 3 Tombol Status Produksi & Distribusi */
+    .btn-status { border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 105px; text-align: center; }
+    .btn-status:hover { opacity: 0.85; transform: scale(1.02); }
+    .st-diproses { background: #fef08a; color: #b45309; }
+    .st-selesai { background: #e0f2fe; color: #0369a1; }
+    .st-sukses { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .st-belum-lunas { background: #fee2e2; color: #b91c1c; }
+    .st-lunas { background: #dcfce7; color: #15803d; }
+
     .badge-stok { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle; display: inline-block; }
     .stok-aman { background: #dcfce7; color: #166534; }
     .stok-kritis { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; animation: pulse 1.5s infinite; }
-    
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     
     .filter-toolbar { display: flex; gap: 10px; align-items: center; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap; }
     .responsive-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-    /* ========================================================
-       MOBILE GRID OPTIMIZATION (RAPI & PRESISI)
-       ======================================================== */
-    @media (max-width: 1200px) {
-        .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-    }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 768px) {
         .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .grid-dashboard { grid-template-columns: 1fr; gap: 15px; }
-        
-        .filter-toolbar { flex-direction: column; align-items: stretch; }
         .filter-toolbar form { flex-direction: column; width: 100%; gap: 10px; }
         .filter-toolbar select { width: 100% !important; }
-        
-        /* Penataan tanggal rentang di Mobile agar lurus rapi */
         #customDateWrapper { flex-direction: column; width: 100%; align-items: stretch !important; gap: 8px !important; }
         #customDateWrapper input { width: 100% !important; }
-        #customDateWrapper span { text-align: center; }
-        
         .btn-export { width: 100%; text-align: center; margin-top: 10px; }
-        .panel-title { font-size: 16px; margin-bottom: 15px; }
     }
-    @media (max-width: 480px) {
-        .kpi-grid { grid-template-columns: 1fr; }
-        .flavor-grid { grid-template-columns: 1fr; gap: 8px; }
-    }
+    @media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr; } .flavor-grid { grid-template-columns: 1fr; gap: 8px; } }
 </style>
 {% endblock %}
 
@@ -64,7 +55,7 @@
 <div class="kpi-grid">
     <div class="kpi-card" style="border-top-color: #3b82f6;">
         <h3>Kapasitas Pabrik/Hari</h3>
-        <p style="color: #3b82f6;" title="Dihitung otomatis berdasarkan Theory of Constraints">{{ kapasitas_harian }} Pack</p>
+        <p style="color: #3b82f6;">{{ kapasitas_harian }} Pack</p>
     </div>
     <div class="kpi-card" style="border-top-color: #7c3aed;">
         <h3>Total Order Disaring</h3>
@@ -100,8 +91,7 @@
                 <div style="background: #e0e7ff; color: #3730a3; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 13px; margin: 10px 0;">
                     <i class="fa-solid fa-calculator"></i> Total akan diproses: <span id="liveTotal" style="font-size: 16px;">0</span> Pack
                 </div>
-                
-                <button type="submit" class="btn-action"><i class="fa-solid fa-cart-arrow-down"></i> Potong Stok & Antrekan</button>
+                <button type="submit" class="btn-action"><i class="fa-solid fa-cart-arrow-down"></i> PRE ORDER</button>
             </form>
         </div>
 
@@ -109,19 +99,11 @@
             <h2 class="panel-title" style="font-size: 14px; color: #334155;">STATUS INVENTORY</h2>
             <p style="font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
                 🍠 Ubi Ungu: <span>{{ inventory['ubi_ungu_gr'] }} Gram</span>
-                {% if inventory['ubi_ungu_gr'] < 600 %}
-                    <span class="badge-stok stok-kritis">Kritis! Butuh Kulakan</span>
-                {% else %}
-                    <span class="badge-stok stok-aman">Aman</span>
-                {% endif %}
+                {% if inventory['ubi_ungu_gr'] < 600 %}<span class="badge-stok stok-kritis">Kritis!</span>{% else %}<span class="badge-stok stok-aman">Aman</span>{% endif %}
             </p>
             <p style="font-size: 13px; font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
                 🥟 Kulit Lumpia: <span>{{ inventory['kulit_lumpia_lbr'] }} Lembar</span>
-                {% if inventory['kulit_lumpia_lbr'] < 75 %}
-                    <span class="badge-stok stok-kritis">Kritis! Butuh Kulakan</span>
-                {% else %}
-                    <span class="badge-stok stok-aman">Aman</span>
-                {% endif %}
+                {% if inventory['kulit_lumpia_lbr'] < 75 %}<span class="badge-stok stok-kritis">Kritis!</span>{% else %}<span class="badge-stok stok-aman">Aman</span>{% endif %}
             </p>
         </div>
     </div>
@@ -139,6 +121,12 @@
                         <option value="kustom" {% if filter_aktif == 'kustom' %}selected{% endif %}>Kustom Rentang</option>
                     </select>
                     
+                    <select name="filter_status" class="form-input" style="width: 140px;">
+                        <option value="semua" {% if filter_status == 'semua' %}selected{% endif %}>Semua Tagihan</option>
+                        <option value="belum_lunas" {% if filter_status == 'belum_lunas' %}selected{% endif %}>Belum Lunas</option>
+                        <option value="lunas" {% if filter_status == 'lunas' %}selected{% endif %}>Sudah Lunas</option>
+                    </select>
+                    
                     <div id="customDateWrapper" style="display: {% if filter_aktif == 'kustom' %}flex{% else %}none{% endif %}; gap: 5px; align-items: center; flex-wrap: wrap;">
                         <input type="date" name="start_date" class="form-input" style="width: 130px;" value="{{ start_date or '' }}">
                         <span style="font-size: 12px; font-weight: bold;">s/d</span>
@@ -151,7 +139,7 @@
             <div style="height: 200px; margin-bottom: 25px;"><canvas id="dashboardChart"></canvas></div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <h2 class="panel-title" style="margin: 0; font-size: 15px;">LOG TRANSAKSI & ANTREAN</h2>
+                <h2 class="panel-title" style="margin: 0; font-size: 15px;">LOG TRANSAKSI & OMS</h2>
                 <a href="{{ url_for('export_csv') }}" class="btn-export"><i class="fa-solid fa-file-excel"></i> Export CSV</a>
             </div>
             
@@ -159,11 +147,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>ID Transaksi</th>
-                            <th>Total</th>
-                            <th>Rincian Rasa</th>
-                            <th>Laba</th>
-                            <th>Status Antrean</th>
+                            <th>ID & Waktu</th>
+                            <th>Detail Order</th>
+                            <th>Target Selesai (SLA)</th>
+                            <th>Status Dapur</th>
+                            <th>Pembayaran</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -173,25 +161,43 @@
                                 <span style="font-weight:700; color:var(--primary-light);">{{ t.id }}</span><br>
                                 <span style="font-size: 10px; color: #94a3b8;">{{ t.tanggal }}</span>
                             </td>
-                            <td style="font-weight:bold;">{{ t.jumlah }} Pack</td>
                             <td>
-                                {% set rincian = [] %}
-                                {% for rasa, qty in t.rasa.items() %}
-                                    {% if qty > 0 %}
-                                        {% set _ = rincian.append(rasa ~ ' (' ~ qty ~ ')') %}
-                                    {% endif %}
-                                {% endfor %}
-                                {{ rincian | join(', ') }}
-                            </td>
-                            <td style="color:#10b981; font-weight:600;">{{ t.laba | rupiah }}</td>
-                            <td>
-                                <span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:11px; font-weight: bold;">
-                                    {{ t.antrean_kumulatif }} Hari
+                                <span style="font-weight:bold;">{{ t.jumlah }} Pack</span><br>
+                                <span style="font-size: 11px; color: #475569;">
+                                    {% set rincian = [] %}
+                                    {% for rasa, qty in t.rasa.items() %}
+                                        {% if qty > 0 %}{% set _ = rincian.append(rasa ~ ' (' ~ qty ~ ')') %}{% endif %}
+                                    {% endfor %}
+                                    {{ rincian | join(', ') }}
                                 </span>
+                            </td>
+                            <td>
+                                <span style="font-weight: bold; color: #334155;">{{ t.estimasi_teks }}</span><br>
+                                <span style="font-size: 11px; color: #0369a1; background:#e0f2fe; padding:2px 5px; border-radius:4px;">🎯 Target: {{ t.target_waktu_tampil }}</span>
+                            </td>
+                            
+                            <td>
+                                <form method="POST" action="/update_status/{{ t.id }}" style="margin: 0;">
+                                    <input type="hidden" name="jenis" value="produksi">
+                                    <button type="submit" class="btn-status {% if t.status_produksi == 'Sukses' %}st-sukses{% elif t.status_produksi == 'Selesai' %}st-selesai{% else %}st-diproses{% endif %}" title="Klik untuk ubah siklus distribusi">
+                                        {% if t.status_produksi == 'Sukses' %}<i class="fa-solid fa-circle-check"></i> Sukses
+                                        {% elif t.status_produksi == 'Selesai' %}<i class="fa-solid fa-check-double"></i> Selesai
+                                        {% else %}<i class="fa-solid fa-fire-burner"></i> Diproses{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            
+                            <td>
+                                <form method="POST" action="/update_status/{{ t.id }}" style="margin: 0;">
+                                    <input type="hidden" name="jenis" value="pembayaran">
+                                    <button type="submit" class="btn-status {% if t.status_pembayaran == 'Lunas' %}st-lunas{% else %}st-belum-lunas{% endif %}" title="Klik untuk melunasi tagihan">
+                                        {% if t.status_pembayaran == 'Lunas' %}<i class="fa-solid fa-money-bill-wave"></i>{% else %}<i class="fa-solid fa-hand-holding-dollar"></i>{% endif %} {{ t.status_pembayaran }}
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">Tidak ada riwayat transaksi pada rentang waktu ini.</td></tr>
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">Tidak ada riwayat transaksi.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -206,14 +212,10 @@
     
     function hitungTotal() {
         let total = 0;
-        qtyInputs.forEach(input => { 
-            total += (parseInt(input.value) || 0); 
-        });
+        qtyInputs.forEach(input => { total += (parseInt(input.value) || 0); });
         liveTotalDisplay.textContent = total;
     }
-    qtyInputs.forEach(input => { 
-        input.addEventListener('input', hitungTotal); 
-    });
+    qtyInputs.forEach(input => { input.addEventListener('input', hitungTotal); });
 
     function toggleCustomDate() {
         const selectValue = document.getElementById('filterSelect').value;
