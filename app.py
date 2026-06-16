@@ -3,16 +3,18 @@ import csv
 import os
 import io
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = 'umbirolls_super_secret_key_2026'
 
+# --- 1. PENGATURAN PATH FILE ANTI-ERROR ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 FILE_COSTING = os.path.join(BASE_DIR, 'Umbirolls drizzle AI.xlsx - Costing.csv')
 FILE_PROSES = os.path.join(BASE_DIR, 'Umbirolls drizzle AI.xlsx - Data proses.csv')
 
+# --- 2. KONFIGURASI GLOBAL & DATABASE ---
 APP_CONFIG = {
     'margin_target': 17.0, 'overhead_tetap': 21404, 'jam_kerja_hari': 8.0,
     'pembulatan_kelipatan': 500, 'mesin_kukus': 1, 'mesin_goreng': 1, 'user_role': 'Owner'
@@ -27,10 +29,15 @@ TRANSAKSI = [
         'jumlah': 15, 
         'rasa': {'Coklat': 5, 'Stroberi': 5, 'Tiramissu': 5, 'Keju': 0, 'Oreo': 0}, 
         'modal': 97215, 'pendapatan': 120000, 'laba': 22785, 
-        'hari_penyelesaian': 0.07, 'antrean_kumulatif': 0.07
+        'estimasi_teks': '15 Menit',
+        'target_waktu_raw': (waktu_sekarang + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M:%S'),
+        'target_waktu_tampil': (waktu_sekarang + timedelta(minutes=15)).strftime('%H:%M WIB'),
+        'status_produksi': 'Sukses',
+        'status_pembayaran': 'Lunas'
     }
 ]
 
+# --- 3. DEKORATOR PENGAMAN LOGIN ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -40,6 +47,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- 4. FUNGSI LOAD & SAVE DATA CSV ---
 def load_costing():
     data = []
     if os.path.exists(FILE_COSTING):
@@ -56,13 +64,10 @@ def load_costing():
                         if "TOTAL" in row[0].upper() or "HPP" in row[0].upper(): break
                         if row[0].strip():
                             data.append({
-                                'nama': row[0].strip(),
-                                'harga_satuan': row[2].strip() if len(row) > 2 else "0",
-                                'kebutuhan': row[3].strip() if len(row) > 3 else "0",
-                                'total': row[4].strip() if len(row) > 4 else "0"
+                                'nama': row[0].strip(), 'harga_satuan': row[2].strip() if len(row) > 2 else "0",
+                                'kebutuhan': row[3].strip() if len(row) > 3 else "0", 'total': row[4].strip() if len(row) > 4 else "0"
                             })
         except: pass
-    
     if not data:
         data = [
             {'nama': 'Ubi ungu', 'harga_satuan': '25000', 'kebutuhan': '600gr', 'total': '15000'},
@@ -129,6 +134,7 @@ def save_proses(form):
         for i in range(len(stasiuns)):
             if stasiuns[i].strip(): writer.writerow([stasiuns[i], kelompoks[i], waktus[i], "-", rejects[i], "-", "-", "-", statuses[i]])
 
+# --- 5. LOGIKA KALKULASI FINANSIAL & OPERASIONAL ---
 def hitung_hpp_dan_harga():
     costing_data = load_costing()
     total_biaya_batch = 0
@@ -145,8 +151,8 @@ def hitung_hpp_dan_harga():
     harga_jual = int((raw_harga_jual + kelipatan - 1) // kelipatan * kelipatan)
     return int(base_hpp_per_pack), harga_jual
 
-def hitung_durasi_produksi(jumlah_pesanan):
-    # DITINGKATKAN: 35 batch per hari agar kapasitas menjadi 1085 pack
+def hitung_durasi_produksi_jam(jumlah_pesanan):
+    # REVISI TETAP TERJAGA: Kapasitas harian diset 1085 pack (35 batch per hari)
     standar_batch_per_hari = 35.0
     standar_jam_kerja = 8.0
     pack_per_batch = 31.0
@@ -154,13 +160,12 @@ def hitung_durasi_produksi(jumlah_pesanan):
     batch_per_jam = (standar_batch_per_hari / standar_jam_kerja) * faktor_mesin
     pack_per_jam = batch_per_jam * pack_per_batch
     total_jam_dibutuhkan = jumlah_pesanan / pack_per_jam
-    estimasi_hari = total_jam_dibutuhkan / APP_CONFIG['jam_kerja_hari']
-    return round(estimasi_hari, 2)
+    return total_jam_dibutuhkan
 
 def hitung_kapasitas_harian():
-    # DITINGKATKAN: 35.0 dikali 31.0 = 1085 Kapasitas Maksimal
     return int((35.0 * 31.0) * ((APP_CONFIG['mesin_kukus'] + APP_CONFIG['mesin_goreng']) / 2.0) * (APP_CONFIG['jam_kerja_hari'] / 8.0))
 
+# --- 6. ROUTING AUTENTIKASI ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'logged_in' in session: return redirect(url_for('index'))
@@ -170,7 +175,7 @@ def login():
         if username == 'owner' and password == 'umbirolls123':
             session['logged_in'] = True
             session['username'] = username
-            flash("🔑 Login berhasil! Selamat datang kembali.", "success")
+            flash("🔑 Login berhasil! Selamat datang di Drizzle System.", "success")
             return redirect(url_for('index'))
         else:
             flash("Username atau password salah!", "error")
@@ -183,6 +188,7 @@ def logout():
     flash("👋 Anda telah berhasil keluar dari sistem.", "success")
     return redirect(url_for('login'))
 
+# --- 7. ROUTING UTAMA ---
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -210,25 +216,52 @@ def index():
             modal = total_jumlah * hpp
             pendapatan = total_jumlah * harga_jual
             laba = pendapatan - modal
-            hari_selesai = hitung_durasi_produksi(total_jumlah)
-            antrean_kumulatif = hari_selesai
-            if len(TRANSAKSI) > 0: antrean_kumulatif = TRANSAKSI[-1]['antrean_kumulatif'] + hari_selesai
+            
+            jam_tambahan = hitung_durasi_produksi_jam(total_jumlah)
+            waktu_mulai = datetime.now()
+            
+            if len(TRANSAKSI) > 0:
+                for t in reversed(TRANSAKSI):
+                    if t['status_produksi'] == 'Diproses':
+                        last_target = datetime.strptime(t['target_waktu_raw'], '%Y-%m-%d %H:%M:%S')
+                        if last_target > waktu_mulai:
+                            waktu_mulai = last_target
+                        break
+            
+            waktu_target = waktu_mulai + timedelta(hours=jam_tambahan)
+            
+            jam = int(jam_tambahan)
+            menit = int((jam_tambahan - jam) * 60)
+            if jam > 0: estimasi_teks = f"{jam} Jam {menit} Menit"
+            else: estimasi_teks = f"{menit} Menit"
             
             TRANSAKSI.append({
-                'id': f"TRX-{len(TRANSAKSI) + 1:03d}", 'tanggal': datetime.now().strftime('%Y-%m-%d %H:%M'),
-                'jumlah': total_jumlah, 'rasa': {'Coklat': q_coklat, 'Stroberi': q_stroberi, 'Tiramissu': q_tiramissu, 'Keju': q_keju, 'Oreo': q_oreo},
-                'modal': modal, 'pendapatan': pendapatan, 'laba': laba, 'hari_penyelesaian': hari_selesai, 'antrean_kumulatif': round(antrean_kumulatif, 2)
+                'id': f"TRX-{len(TRANSAKSI) + 1:03d}", 
+                'tanggal': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'jumlah': total_jumlah, 
+                'rasa': {'Coklat': q_coklat, 'Stroberi': q_stroberi, 'Tiramissu': q_tiramissu, 'Keju': q_keju, 'Oreo': q_oreo},
+                'modal': modal, 'pendapatan': pendapatan, 'laba': laba, 
+                'estimasi_teks': estimasi_teks,
+                'target_waktu_raw': waktu_target.strftime('%Y-%m-%d %H:%M:%S'),
+                'target_waktu_tampil': waktu_target.strftime('%H:%M WIB'),
+                'status_produksi': 'Diproses',
+                'status_pembayaran': 'Belum Lunas'
             })
-            flash(f"✅ Pesanan diproses! Estimasi selesai {round(antrean_kumulatif, 2)} Hari.", "success")
+            flash(f"✅ Pesanan diproses! Target selesai dalam {estimasi_teks}.", "success")
         return redirect(url_for('index'))
 
     filter_waktu = request.args.get('filter_waktu', 'semua')
+    filter_status = request.args.get('filter_status', 'semua')
     tanggal_mulai = request.args.get('start_date')
     tanggal_akhir = request.args.get('end_date')
+    
     transaksi_terfilter = []
     sekarang = datetime.now()
     
     for t in TRANSAKSI:
+        if filter_status == 'belum_lunas' and t['status_pembayaran'] == 'Lunas': continue
+        if filter_status == 'lunas' and t['status_pembayaran'] == 'Belum Lunas': continue
+        
         tgl_transaksi = datetime.strptime(t['tanggal'], '%Y-%m-%d %H:%M')
         if filter_waktu == 'hari_ini' and tgl_transaksi.date() == sekarang.date(): transaksi_terfilter.append(t)
         elif filter_waktu == '7_hari' and (sekarang - tgl_transaksi).days <= 7: transaksi_terfilter.append(t)
@@ -253,14 +286,33 @@ def index():
     return render_template('index.html', config=APP_CONFIG, transaksi=transaksi_terfilter, inventory=INVENTORY,
                            hpp=hpp, harga_jual=harga_jual, kapasitas_harian=kapasitas_harian,
                            total_order=total_order, total_pendapatan=total_pendapatan, total_laba=total_laba, best_seller=best_seller,
-                           filter_aktif=filter_waktu, start_date=tanggal_mulai, end_date=tanggal_akhir)
+                           filter_aktif=filter_waktu, filter_status=filter_status, start_date=tanggal_mulai, end_date=tanggal_akhir)
+
+# --- REVISI LOGIKA AKURAT 3 SIKLUS STATUS (Diproses -> Selesai -> Sukses) ---
+@app.route('/update_status/<trx_id>', methods=['POST'])
+@login_required
+def update_status(trx_id):
+    jenis = request.form.get('jenis')
+    for t in TRANSAKSI:
+        if t['id'] == trx_id:
+            if jenis == 'produksi':
+                if t['status_produksi'] == 'Diproses':
+                    t['status_produksi'] = 'Selesai'
+                elif t['status_produksi'] == 'Selesai':
+                    t['status_produksi'] = 'Sukses'
+                else:
+                    t['status_produksi'] = 'Diproses'
+            elif jenis == 'pembayaran':
+                t['status_pembayaran'] = 'Lunas' if t['status_pembayaran'] == 'Belum Lunas' else 'Belum Lunas'
+            break
+    return redirect(url_for('index'))
 
 @app.route('/costing', methods=['GET', 'POST'])
 @login_required
 def costing():
     if request.method == 'POST':
         save_costing(request.form)
-        flash("💾 Data Costing berhasil diperbarui & HPP disinkronkan!", "success")
+        flash("💾 Data Costing berhasil diperbarui!", "success")
         return redirect(url_for('costing'))
     return render_template('costing.html', data_costing=load_costing())
 
@@ -269,7 +321,7 @@ def costing():
 def proses():
     if request.method == 'POST':
         save_proses(request.form)
-        flash("💾 Data Proses Operasional berhasil diperbarui!", "success")
+        flash("💾 Data Lini Produksi berhasil diperbarui!", "success")
         return redirect(url_for('proses'))
     return render_template('proses.html', data_proses=load_proses())
 
@@ -287,7 +339,10 @@ def settings():
             APP_CONFIG['mesin_goreng'] = max(1, int(request.form.get('mesin_goreng', APP_CONFIG['mesin_goreng'])))
             APP_CONFIG['margin_target'] = float(request.form.get('margin_target', APP_CONFIG['margin_target']))
             APP_CONFIG['jam_kerja_hari'] = float(request.form.get('jam_kerja_hari', APP_CONFIG['jam_kerja_hari']))
-            flash("⚙️ Pengaturan & Kapasitas Berhasil Disimpan!", "success")
+            APP_CONFIG['overhead_tetap'] = int(request.form.get('overhead_tetap', APP_CONFIG['overhead_tetap']))
+            APP_CONFIG['pembulatan_kelipatan'] = int(request.form.get('pembulatan_kelipatan', APP_CONFIG['pembulatan_kelipatan']))
+            APP_CONFIG['user_role'] = request.form.get('user_role', APP_CONFIG['user_role'])
+            flash("⚙️ Pengaturan & Konfigurasi Berhasil Disimpan!", "success")
         return redirect(url_for('settings'))
     return render_template('settings.html', config=APP_CONFIG, inventory=INVENTORY)
 
@@ -296,17 +351,18 @@ def settings():
 def export_csv():
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
-    writer.writerow(['ID Transaksi', 'Tanggal Penginputan', 'Volume (Pack)', 'Coklat', 'Stroberi', 'Tiramissu', 'Keju', 'Oreo', 'Modal Pokok (HPP)', 'Total Pendapatan', 'Laba Bersih', 'Kumulatif Antrean (Hari)'])
+    writer.writerow(['ID Transaksi', 'Tanggal', 'Volume', 'Coklat', 'Stroberi', 'Tiramissu', 'Keju', 'Oreo', 'Modal Pokok', 'Pendapatan', 'Laba Bersih', 'SLA Target', 'Status Produksi', 'Status Pembayaran'])
     for t in TRANSAKSI: 
         writer.writerow([
             t['id'], t['tanggal'], t['jumlah'], 
             t.get('rasa', {}).get('Coklat', 0), t.get('rasa', {}).get('Stroberi', 0),
             t.get('rasa', {}).get('Tiramissu', 0), t.get('rasa', {}).get('Keju', 0), t.get('rasa', {}).get('Oreo', 0),
-            int(t['modal']), int(t['pendapatan']), int(t['laba']), t['antrean_kumulatif']
+            int(t['modal']), int(t['pendapatan']), int(t['laba']), 
+            t['target_waktu_tampil'], t['status_produksi'], t['status_pembayaran']
         ])
     excel_friendly_data = "\ufeff" + output.getvalue()
     response = Response(excel_friendly_data, mimetype="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=Laporan_Tahunan_Umbirolls.csv"
+    response.headers["Content-Disposition"] = "attachment; filename=Laporan_Umbirolls.csv"
     return response
 
 @app.route('/reset', methods=['POST'])
